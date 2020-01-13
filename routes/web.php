@@ -15,5 +15,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/view', ['as' => 'view', 'uses' => 'TestController@view']);
-Route::post('/change_image', ['as' => 'change', 'uses' => 'TestController@change']);
+Route::get('/show_url', ['as' => 'show_url', 'uses' => 'TestController@showUrl']);
+Route::get('/show_form', ['as' => 'show_form', 'uses' => 'TestController@showForm']);
+Route::post('/access_url', ['as' => 'access_url', 'uses' => 'TestController@accessUrl']);
+Route::post('/submit_form', ['as' => 'submit_form', 'uses' => 'TestController@submitForm']);

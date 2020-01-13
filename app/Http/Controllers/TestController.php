@@ -7,60 +7,82 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 
+use App\Response;
+
 class TestController extends Controller
 {
-	public function view()
+	public function showUrl()
 	{
-		$client = new \GuzzleHttp\Client();
-
-		$params = [
-            'api_key' => 'm1TjeAgd63S3urgJwVvIJ3djL4tb5bwPyqsEOYKd'
-        ];
-       	
-        $response = $client->request('get', "https://api.nasa.gov/planetary/apod", [
-            'query' => $params
-        ]);
-
-        $data['data'] = json_decode($response->getBody()->getContents());
-
-		return view('view', $data);
+		return view('show_url');
 	}
 
-	public function change(Request $request)
+	public function showForm()
 	{
-		if($request->submit == 'next'){
-			if(strtotime($request->date) <= strtotime(date('Y-m-d'))){
-				$date = date('Y-m-d', strtotime($request->date . ' +1 day'));
-			}else{
-				$date = date('Y-m-d');
-			}
+		return view('show_form');
+	}
+
+	public function accessUrl(Request $request)
+	{
+		if(!filter_var($request->url, FILTER_VALIDATE_URL)){
+			die('URL invalid!');
 		}
-		if($request->submit == 'back'){
-			$date = date('Y-m-d', strtotime($request->date . ' -1 day'));
-		}
-		if($request->submit == 'hd'){
-			$date = date('Y-m-d');
+		$data['headers'] = get_headers($request->url);
+		$data['response_code'] = $data['headers'][0];
+
+		try{
+			$client = new \GuzzleHttp\Client();
+	        $response = $client->request('get', $request->url, []);
+
+	        $data['body'] = $response->getBody()->getContents();
+        } catch (\Exception $e){
+       		$data['body'] = 'Eroare: '.$e;
+       	}
+
+       	Response::create([
+       		'method' => 'GET',
+       		'url' => $request->url,
+       		'status_code' => $data['response_code'],
+       		'headers' => $data['headers'],
+       		'body' => $data['body']
+       	]);
+
+		return view('url_response', $data);
+	}
+
+	public function submitForm(Request $request)
+	{
+		if(!filter_var($request->url, FILTER_VALIDATE_URL)){
+			die('URL invalid!');
 		}
 
-		$hd = ($request->hd) ? true : false;
+		$data['headers'] = get_headers($request->url);
+		$data['response_code'] = $data['headers'][0];
 
        	try{
        		$client = new \GuzzleHttp\Client();
 			$params = [
-	            'api_key' => 'm1TjeAgd63S3urgJwVvIJ3djL4tb5bwPyqsEOYKd',
-	            'date' => $date,
-	            'hd' => $hd
+	            'param1' => $request->param1,
+	            'param2' => $request->param2
 	        ];
 
-       		$response = $client->request('get', "https://api.nasa.gov/planetary/apod", [
+       		$response = $client->request('post', $request->url, [
 	            'query' => $params
 	        ]);
 
-	        $data = $response->getBody()->getContents();
+	        $data['body'] = $response->getBody()->getContents();
        	} catch (\Exception $e){
-       		$data = '';
+       		$data['body'] = 'Eroare: '.$e;
        	}
 
-		return $data;
+       	Response::create([
+       		'method' => 'POST',
+       		'url' => $request->url,
+       		'parameters' => $params,
+       		'status_code' => $data['response_code'],
+       		'headers' => $data['headers'],
+       		'body' => $data['body']
+       	]);
+
+		return view('form_response', $data);
 	}
 }
